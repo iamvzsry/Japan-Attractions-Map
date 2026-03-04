@@ -478,12 +478,14 @@ select:focus {
     grid-template-columns: 1fr;
   }
 
-  .panel {
-    min-height: auto;
+  .map-column {
+    order: 1;
+    grid-template-rows: minmax(370px, 64vh) auto;
   }
 
-  .map-column {
-    grid-template-rows: minmax(370px, 64vh) auto;
+  .panel {
+    order: 2;
+    min-height: auto;
   }
 }
 
