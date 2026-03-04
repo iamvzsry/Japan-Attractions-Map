@@ -1,5 +1,5 @@
 const map = L.map('map', {
-  center: [36.35, 138.25],
+  center: [36.4, 138.25],
   zoom: 5,
   zoomControl: true,
 });
@@ -10,9 +10,11 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 const markerLayer = L.layerGroup().addTo(map);
+
 const summaryEl = document.querySelector('#summary');
 const listEl = document.querySelector('#attractionList');
 const detailCardEl = document.querySelector('#detailCard');
+const heroStatsEl = document.querySelector('#heroStats');
 
 const searchInput = document.querySelector('#searchInput');
 const regionSelect = document.querySelector('#regionSelect');
@@ -20,8 +22,8 @@ const categorySelect = document.querySelector('#categorySelect');
 const popularitySelect = document.querySelector('#popularitySelect');
 
 const colorByPopularity = {
-  热门: '#d9480f',
-  小众: '#0f766e',
+  热门: '#ea580c',
+  小众: '#0891b2',
 };
 
 const state = {
@@ -33,6 +35,15 @@ const state = {
 };
 
 const collator = new Intl.Collator('zh-CN');
+
+function escapeHtml(input) {
+  return String(input)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 
 function uniqueSorted(items) {
   return [...new Set(items)].sort((a, b) => collator.compare(a, b));
@@ -61,6 +72,62 @@ function matchesKeyword(item, keyword) {
     .toLowerCase();
 
   return haystack.includes(keyword);
+}
+
+function buildGuideLinks(item) {
+  const keyword = `${item.name} ${item.prefecture} 日本 旅行 攻略`;
+  const zhKeyword = encodeURIComponent(keyword);
+  const enKeyword = encodeURIComponent(`${item.enName ?? item.name} ${item.prefecture} travel guide`);
+
+  return [
+    {
+      label: '小红书攻略',
+      url: `https://www.xiaohongshu.com/search_result?keyword=${zhKeyword}`,
+    },
+    {
+      label: 'B站视频',
+      url: `https://search.bilibili.com/all?keyword=${zhKeyword}`,
+    },
+    {
+      label: '马蜂窝',
+      url: `https://www.mafengwo.cn/search/q.php?q=${zhKeyword}`,
+    },
+    {
+      label: 'Google攻略',
+      url: `https://www.google.com/search?q=${enKeyword}`,
+    },
+  ];
+}
+
+function renderHeroStats() {
+  if (!heroStatsEl) {
+    return;
+  }
+
+  const total = state.attractions.length;
+  const popular = state.attractions.filter((item) => item.popularity === '热门').length;
+  const hidden = state.attractions.filter((item) => item.popularity === '小众').length;
+  const regions = new Set(state.attractions.map((item) => item.region)).size;
+  const categories = new Set(state.attractions.map((item) => item.category)).size;
+
+  heroStatsEl.innerHTML = `
+    <article class="stat-card">
+      <p>景点总数</p>
+      <strong>${total}</strong>
+    </article>
+    <article class="stat-card">
+      <p>热门 / 小众</p>
+      <strong>${popular} / ${hidden}</strong>
+    </article>
+    <article class="stat-card">
+      <p>覆盖地区</p>
+      <strong>${regions}</strong>
+    </article>
+    <article class="stat-card">
+      <p>类型数量</p>
+      <strong>${categories}</strong>
+    </article>
+  `;
 }
 
 function applyFilters() {
@@ -103,7 +170,7 @@ function applyFilters() {
     if (state.selectedId && !state.filtered.some((item) => item.id === state.selectedId)) {
       state.selectedId = null;
       detailCardEl.classList.add('empty');
-      detailCardEl.innerHTML = '<h3>选择一个景点</h3><p>当前筛选下无已选景点，请重新选择。</p>';
+      detailCardEl.innerHTML = '<h3>重新选择景点</h3><p>当前筛选下已选景点不可见，请重新点击地图或列表。</p>';
     }
 
     if (state.firstRender) {
@@ -120,24 +187,29 @@ function fitMapToVisible() {
 
   const bounds = L.latLngBounds(state.filtered.map((item) => [item.lat, item.lng]));
   map.fitBounds(bounds, {
-    padding: [36, 36],
+    padding: [30, 30],
     maxZoom: 7,
   });
 }
 
 function createPopupHtml(item) {
   const color = colorByPopularity[item.popularity] ?? '#475569';
+  const safeName = escapeHtml(item.name);
+  const safeMeta = escapeHtml(`${item.prefecture} · ${item.category}`);
+  const safeFeature = escapeHtml(item.feature);
+  const guideLinks = buildGuideLinks(item);
+
   return `
-    <div style="min-width: 228px; line-height: 1.45;">
-      <h4 style="margin: 0 0 4px; font-size: 15px;">${item.name}</h4>
-      <p style="margin: 0; color: #57534e; font-size: 12px;">${item.prefecture} · ${item.category}</p>
-      <p style="margin: 6px 0; font-size: 13px;">${item.feature}</p>
-      <p style="margin: 0 0 8px;">
-        <span style="display: inline-block; color: ${color}; font-weight: 700; font-size: 12px;">${item.popularity}</span>
-      </p>
+    <div style="min-width: 240px; line-height: 1.48;">
+      <h4 style="margin: 0 0 4px; font-size: 15px;">${safeName}</h4>
+      <p style="margin: 0; color: #475569; font-size: 12px;">${safeMeta}</p>
+      <p style="margin: 6px 0; font-size: 13px;">${safeFeature}</p>
+      <p style="margin: 0 0 7px; color: ${color}; font-weight: 700; font-size: 12px;">${escapeHtml(item.popularity)}</p>
       <a href="${item.googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="font-size: 12px;">Google Maps</a>
-      <span style="margin: 0 4px; color: #999;">|</span>
+      <span style="margin: 0 4px; color: #94a3b8;">|</span>
       <a href="${item.openStreetMapUrl}" target="_blank" rel="noopener noreferrer" style="font-size: 12px;">OpenStreetMap</a>
+      <span style="margin: 0 4px; color: #94a3b8;">|</span>
+      <a href="${guideLinks[0].url}" target="_blank" rel="noopener noreferrer" style="font-size: 12px;">小红书</a>
     </div>
   `;
 }
@@ -148,11 +220,11 @@ function renderMarkers() {
 
   for (const item of state.filtered) {
     const marker = L.circleMarker([item.lat, item.lng], {
-      radius: item.popularity === '热门' ? 8 : 7,
+      radius: item.popularity === '热门' ? 8.5 : 7,
       color: '#ffffff',
-      weight: 1.2,
+      weight: 1.3,
       fillColor: colorByPopularity[item.popularity] ?? '#475569',
-      fillOpacity: 0.92,
+      fillOpacity: 0.9,
     });
 
     marker.bindPopup(createPopupHtml(item));
@@ -167,7 +239,7 @@ function renderMarkers() {
 
 function renderList() {
   if (state.filtered.length === 0) {
-    listEl.innerHTML = '<p style="color:#57534e;margin:0.8rem 0.2rem;">没有匹配结果，试试放宽筛选条件。</p>';
+    listEl.innerHTML = '<p style="color:#334155;margin:0.8rem 0.2rem;">没有匹配结果，试试放宽筛选条件。</p>';
     return;
   }
 
@@ -179,11 +251,11 @@ function renderList() {
       return `
         <button class="spot-item ${activeClass}" type="button" data-id="${item.id}">
           <div class="spot-head">
-            <h3 class="spot-title">${item.name}</h3>
-            <span class="tag ${tagClass}">${item.popularity}</span>
+            <h3 class="spot-title">${escapeHtml(item.name)}</h3>
+            <span class="tag ${tagClass}">${escapeHtml(item.popularity)}</span>
           </div>
-          <p class="spot-meta">${item.region} · ${item.prefecture} · ${item.category}</p>
-          <p class="spot-feature">${item.feature}</p>
+          <p class="spot-meta">${escapeHtml(`${item.region} · ${item.prefecture} · ${item.category}`)}</p>
+          <p class="spot-feature">${escapeHtml(item.feature)}</p>
         </button>
       `;
     })
@@ -209,25 +281,34 @@ function renderDetail(item) {
   detailCardEl.classList.remove('empty');
 
   const tagClass = item.popularity === '热门' ? 'popular' : 'hidden';
+  const guideLinks = buildGuideLinks(item)
+    .map(
+      (link) =>
+        `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.label)}</a>`
+    )
+    .join('');
 
   detailCardEl.innerHTML = `
     <div class="detail-top">
       <div>
-        <h3>${item.name}</h3>
-        <p class="detail-sub">${item.enName} · ${item.prefecture} · ${item.region}</p>
+        <h3>${escapeHtml(item.name)}</h3>
+        <p class="detail-sub">${escapeHtml(`${item.enName} · ${item.prefecture} · ${item.region}`)}</p>
       </div>
-      <span class="tag ${tagClass}">${item.popularity}</span>
+      <span class="tag ${tagClass}">${escapeHtml(item.popularity)}</span>
     </div>
 
-    <p class="detail-feature">${item.feature}</p>
+    <p class="detail-feature">${escapeHtml(item.feature)}</p>
+    <p class="detail-sub">类型：${escapeHtml(item.category)}</p>
 
-    <p class="detail-sub">类型：${item.category}</p>
-
+    <p class="section-title">地图导航</p>
     <div class="detail-links">
       <a class="primary" href="${item.googleMapsUrl}" target="_blank" rel="noopener noreferrer">Google Maps</a>
       <a href="${item.openStreetMapUrl}" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
       <a href="${item.sourceUrl}" target="_blank" rel="noopener noreferrer">来源链接</a>
     </div>
+
+    <p class="section-title">攻略平台</p>
+    <div class="guide-links">${guideLinks}</div>
   `;
 }
 
@@ -247,7 +328,7 @@ function selectAttraction(id, opts = { openPopup: true, pan: true }) {
   }
 
   if (opts.pan) {
-    map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 8), { duration: 0.7 });
+    map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 8), { duration: 0.62 });
   }
 
   if (opts.openPopup) {
@@ -271,11 +352,12 @@ async function loadAttractions() {
     populateSelectOptions(regionSelect, regions);
     populateSelectOptions(categorySelect, categories);
 
+    renderHeroStats();
     applyFilters();
   } catch (error) {
     console.error(error);
     summaryEl.textContent = '加载失败';
-    listEl.innerHTML = `<p style="color:#b91c1c;">${error.message}</p>`;
+    listEl.innerHTML = `<p style="color:#b91c1c;">${escapeHtml(error.message)}</p>`;
   }
 }
 
