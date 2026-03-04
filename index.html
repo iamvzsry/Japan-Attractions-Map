@@ -6,7 +6,7 @@
     <title>日本景点地图 · 热门 + 小众</title>
     <meta
       name="description"
-      content="结合 OpenStreetMap 与 Google Maps 的日本景点地图，覆盖热门与小众景点，并给出每个景点的特色说明。"
+      content="结合 OpenStreetMap 与 Google Maps 的日本景点地图，覆盖热门与小众景点，并给出每个景点的特色说明与攻略入口。"
     />
     <link
       rel="icon"
@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho:wght@500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700;900&family=Zen+Dots&display=swap"
       rel="stylesheet"
     />
     <link
@@ -27,17 +27,40 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="ambient ambient-a" aria-hidden="true"></div>
+    <div class="ambient ambient-b" aria-hidden="true"></div>
+
     <header class="hero">
       <div class="hero-inner">
-        <p class="kicker">Vercel Ready · OpenStreetMap + Google Maps</p>
+        <p class="kicker">Vercel Ready · OpenStreetMap + Google Maps + Guide Links</p>
         <h1>日本景点地图</h1>
         <p class="subtitle">
-          不只热门地标，也包含地图上可检索的小众目的地。点击地图或列表，查看每个景点的核心特色。
+          热门与小众一起收录。点开景点后，除了地图导航，还可以一键跳转到小红书、B站、马蜂窝等平台看攻略。
         </p>
+
         <div class="hero-tags">
-          <span>热门/小众双轨</span>
-          <span>地区与类型筛选</span>
-          <span>一键跳转地图导航</span>
+          <span>大规模景点池</span>
+          <span>地区/类型/热度筛选</span>
+          <span>攻略平台直达</span>
+        </div>
+
+        <div id="heroStats" class="hero-stats" aria-live="polite">
+          <article class="stat-card">
+            <p>景点总数</p>
+            <strong>--</strong>
+          </article>
+          <article class="stat-card">
+            <p>热门/小众</p>
+            <strong>-- / --</strong>
+          </article>
+          <article class="stat-card">
+            <p>覆盖地区</p>
+            <strong>--</strong>
+          </article>
+          <article class="stat-card">
+            <p>类型数量</p>
+            <strong>--</strong>
+          </article>
         </div>
       </div>
     </header>
@@ -86,7 +109,7 @@
         <div id="map" class="map" aria-label="日本景点地图"></div>
         <article id="detailCard" class="detail-card empty">
           <h3>选择一个景点</h3>
-          <p>从左侧列表或地图标记中选择，查看该景点的特色、类别和地图跳转链接。</p>
+          <p>从左侧列表或地图标记中选择，查看该景点的特色、地图导航和攻略平台入口。</p>
         </article>
       </section>
     </main>
@@ -94,7 +117,7 @@
     <footer class="footer">
       <p>
         经纬度来源：OpenStreetMap Nominatim（地理编码） ·
-        景点链接：Google Maps Search（可直接导航）
+        地图导航：Google Maps / OpenStreetMap · 攻略入口：小红书 / B站 / 马蜂窝 / Google
       </p>
     </footer>
 
