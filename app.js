@@ -4,9 +4,14 @@ const map = L.map('map', {
   zoomControl: true,
 });
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18,
-  attribution: '&copy; OpenStreetMap contributors',
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  // High-DPI tiles improve clarity on mobile retina screens.
+  // CARTO tiles still rely on OpenStreetMap data.
+  maxZoom: 20,
+  maxNativeZoom: 20,
+  detectRetina: true,
+  subdomains: 'abcd',
+  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
 }).addTo(map);
 
 const markerLayer = L.layerGroup().addTo(map);
@@ -35,6 +40,10 @@ const state = {
 };
 
 const collator = new Intl.Collator('zh-CN');
+
+function isMobileViewport() {
+  return window.matchMedia('(max-width: 980px)').matches;
+}
 
 function escapeHtml(input) {
   return String(input)
@@ -196,11 +205,12 @@ function createPopupHtml(item) {
   const color = colorByPopularity[item.popularity] ?? '#475569';
   const safeName = escapeHtml(item.name);
   const safeMeta = escapeHtml(`${item.prefecture} · ${item.category}`);
-  const safeFeature = escapeHtml(item.feature);
+  const featureText = isMobileViewport() && item.feature.length > 42 ? `${item.feature.slice(0, 42)}...` : item.feature;
+  const safeFeature = escapeHtml(featureText);
   const guideLinks = buildGuideLinks(item);
 
   return `
-    <div style="min-width: 240px; line-height: 1.48;">
+    <div style="line-height: 1.48;">
       <h4 style="margin: 0 0 4px; font-size: 15px;">${safeName}</h4>
       <p style="margin: 0; color: #475569; font-size: 12px;">${safeMeta}</p>
       <p style="margin: 6px 0; font-size: 13px;">${safeFeature}</p>
@@ -227,7 +237,13 @@ function renderMarkers() {
       fillOpacity: 0.9,
     });
 
-    marker.bindPopup(createPopupHtml(item));
+    marker.bindPopup(createPopupHtml(item), {
+      maxWidth: isMobileViewport() ? 210 : 300,
+      minWidth: isMobileViewport() ? 120 : 180,
+      autoPanPaddingTopLeft: [18, 18],
+      autoPanPaddingBottomRight: [18, isMobileViewport() ? 120 : 22],
+      keepInView: true,
+    });
     marker.on('click', () => {
       selectAttraction(item.id, { openPopup: false, pan: false });
     });
@@ -266,7 +282,7 @@ function renderList() {
   for (const button of listEl.querySelectorAll('.spot-item')) {
     button.addEventListener('click', () => {
       const { id } = button.dataset;
-      selectAttraction(id, { openPopup: true, pan: true });
+      selectAttraction(id, { openPopup: !isMobileViewport(), pan: true });
     });
   }
 }
@@ -328,11 +344,14 @@ function selectAttraction(id, opts = { openPopup: true, pan: true }) {
   }
 
   if (opts.pan) {
-    map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 8), { duration: 0.62 });
+    const targetZoom = isMobileViewport() ? Math.min(Math.max(map.getZoom(), 6), 7) : Math.max(map.getZoom(), 8);
+    map.flyTo(marker.getLatLng(), targetZoom, { duration: isMobileViewport() ? 0.4 : 0.62 });
   }
 
   if (opts.openPopup) {
     marker.openPopup();
+  } else {
+    map.closePopup();
   }
 }
 
