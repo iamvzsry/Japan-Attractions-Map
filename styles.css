@@ -350,6 +350,18 @@ select:focus {
   min-height: 420px;
 }
 
+.leaflet-container {
+  font-family: 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+}
+
 .detail-card {
   border-top: 1px solid var(--line);
   padding: 1rem 1rem 1.05rem;
@@ -480,12 +492,26 @@ select:focus {
 
   .map-column {
     order: 1;
-    grid-template-rows: minmax(370px, 64vh) auto;
+    grid-template-rows: minmax(300px, 52vh) auto;
+  }
+
+  .map {
+    min-height: 300px;
   }
 
   .panel {
     order: 2;
     min-height: auto;
+  }
+
+  .detail-card {
+    max-height: 42vh;
+    overflow: auto;
+  }
+
+  .leaflet-popup-content {
+    margin: 8px 10px;
+    font-size: 12px;
   }
 }
 
@@ -504,5 +530,18 @@ select:focus {
 
   .stat-card strong {
     font-size: 0.96rem;
+  }
+
+  .map-column {
+    grid-template-rows: minmax(260px, 46vh) auto;
+  }
+
+  .map {
+    min-height: 260px;
+  }
+
+  .detail-card {
+    max-height: 48vh;
+    padding: 0.88rem;
   }
 }
